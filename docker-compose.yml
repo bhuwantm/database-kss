@@ -1,0 +1,17 @@
+---
+version: "3"
+
+volumes:
+  # Reusable persistent volumes.
+  datalake-data:
+
+services:
+  datalake:
+    container_name: "databse-kss"
+    build: "./mssql"
+    env_file:
+      - .env
+    ports:
+      - "1451:1433"
+    volumes:
+      - database-kss-data:/var/opt/mssql
