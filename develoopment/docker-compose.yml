@@ -1,13 +1,10 @@
----
-version: "3"
-
 volumes:
   # Reusable persistent volumes.
-  datalake-data:
+  database-kss-data:
 
 services:
-  datalake:
-    container_name: "databse-kss"
+  databse-kss:
+    container_name: "databse-kss-mssql"
     build: "./mssql"
     env_file:
       - .env
