@@ -1,6 +1,12 @@
-import db
+import random
+from faker import Faker
+from pyodbc import Connection
 
-def create_tables():
+from db.utils import in_transaction
+
+
+@in_transaction
+def create_tables(conn: Connection):
     create_student_query = """
     CREATE TABLE student (
         id INT IDENTITY(1,1) PRIMARY KEY,
@@ -11,7 +17,7 @@ def create_tables():
         address VARCHAR(255) NULL
     );
     """
-    
+
     create_subject_query = """
     CREATE TABLE subject (
         id INT IDENTITY(1,1) PRIMARY KEY,
@@ -20,63 +26,47 @@ def create_tables():
     );
     """
 
-    conn = db.get_connection()
-
-    try:
-        print("Seeding tables...")
-
-        cursor = conn.cursor()
-
-        # Start a transaction
-        conn.autocommit = False  # Disable autocommit to start a transaction
-
-        # Execute both queries
-        cursor.execute(create_student_query)
-        cursor.execute(create_subject_query)
-
-        # Commit the transaction
-        conn.commit()
-
-        print("Both tables created successfully within a single transaction.")
-
-    except Exception as e:
-        # Rollback the transaction in case of an error
-        conn.rollback()
-        print(f"Transaction failed. Rolled back due to error: {e}")
-
-    finally:
-        # Close the connection
-        conn.close()
+    cursor = conn.cursor()
+    cursor.execute(create_student_query)
+    cursor.execute(create_subject_query)
+    print("Competed creating tables.")
 
 
-def drop_tables():
-    drop_student_query = "DROP TABLE school;"
+@in_transaction
+def drop_tables(conn: Connection):
+    drop_student_query = "DROP TABLE student;"
     drop_subject_query = "DROP TABLE subject;"
 
-    conn = db.get_connection()
+    cursor = conn.cursor()
+    cursor.execute(drop_student_query)
+    cursor.execute(drop_subject_query)
 
-    try:
-        print("Dropping tables...")
 
-        cursor = conn.cursor()
+@in_transaction
+def insert_data(conn: Connection):
+    data_count = 10000
+    fake = Faker()
+    cursor = conn.cursor()
 
-        # Start a transaction
-        conn.autocommit = False  # Disable autocommit to start a transaction
+    # Insert data into student table
+    print("Inserting data into student table...")
 
-        # Execute both queries
-        cursor.execute(drop_student_query)
-        cursor.execute(drop_subject_query)
+    for i in range(0, data_count):
+        print(f"Inserting row {i} of {data_count}... \r", end="", flush=True)
 
-        # Commit the transaction
-        conn.commit()
+        insert_student_query = f"""
+        INSERT INTO student (first_name, last_name, roll_number, grade, address)
+        VALUES ('{fake.first_name()}', '{fake.last_name()}', 'std-{i}', '{random.randint(1, 10)}', '{fake.address()}');
+        """
+        cursor.execute(insert_student_query)
 
-        print("Both tables dropped successfully within a single transaction.")
+    print(f"Completed inserting {data_count} number of rows into student table.")
 
-    except Exception as e:
-        # Rollback the transaction in case of an error
-        conn.rollback()
-        print(f"Transaction failed. Rolled back due to error: {e}")
 
-    finally:
-        # Close the connection
-        conn.close()
+def seed():
+    create_tables()
+    insert_data()
+
+
+def unseed():
+    drop_tables()
